@@ -15,6 +15,7 @@ export default function TodayPage(props) {
                     plan={props.plan}
                     plannerLoading={props.plannerLoading}
                     plannerStatus={props.plannerStatus}
+                    plannerError={props.plannerError}
                     onRefresh={() => props.loadDailyPlan('Balanced', true)}
                     onBuildMyDay={() => { }}
                 />

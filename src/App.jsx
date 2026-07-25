@@ -68,6 +68,7 @@ export default function ADHDProductivityApp() {
     plan,
     plannerStatus,
     plannerLoading,
+    plannerError,
     loadDailyPlan,
   } = useDailyPlanner(user)
   const {
@@ -415,6 +416,7 @@ export default function ADHDProductivityApp() {
             plan={plan}
             plannerLoading={plannerLoading}
             plannerStatus={plannerStatus}
+            plannerError={plannerError}
             loadDailyPlan={loadDailyPlan}
             showTaskForm={showTaskForm}
             setShowTaskForm={setShowTaskForm}
