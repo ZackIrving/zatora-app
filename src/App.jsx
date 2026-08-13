@@ -1,39 +1,43 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
-import { appModes, emptyTaskForm, starterTasks } from './constants/appData'
+import { emptyTaskForm } from './constants/appData'
 import AuthScreen from './components/AuthScreen'
 import ResetPasswordScreen from './components/ResetPasswordScreen'
 import ReminderBanner from './components/ReminderBanner'
-import Header from './components/Header'
-import NavigationTabs from './components/NavigationTabs'
-import DailyStats from './components/DailyStats'
-import CustomTaskForm from './components/CustomTaskForm'
-import TaskCard from './components/TaskCard'
 import BrainDumpPage from './components/BrainDumpPage'
 import FocusTimerPage from './components/FocusTimerPage'
 import ProgressPage from './components/ProgressPage'
+import DailyPlanPage from './components/DailyPlanPage'
+import WeeklyReviewPage from './components/WeeklyReviewPage'
+import DistractionBlockerPage from './components/DistractionBlockerPage'
+import AICoachPage from './components/AICoachPage'
+import NotificationsPage from './components/NotificationsPage'
+import SettingsPage from './components/SettingsPage'
+import HomePageV2 from './components/home/HomePageV2'
+import AppLayout from './components/layout/AppLayout'
+import TopBar from './components/layout/TopBar'
 import { useFocusTimer } from './hooks/useFocusTimer'
 import { useAuth } from './hooks/useAuth'
 import { useTasks } from './hooks/useTasks'
 import { useBrainDump } from './hooks/useBrainDump'
 import { useStreaks } from './hooks/useStreaks'
 import { useHabits } from './hooks/useHabits'
-import HabitTracker from './components/HabitTracker'
-import AITaskCoach from './components/AITaskCoach'
-import DailyPlanPage from './components/DailyPlanPage'
 import { useDailyPlan } from './hooks/useDailyPlan'
 import { useProgress } from './hooks/useProgress'
 import { useBadges } from './hooks/useBadges'
-import BadgeCollection from './components/BadgeCollection'
-import BulldogCompanion from './components/BulldogCompanion'
-import WeeklyReviewPage from './components/WeeklyReviewPage'
 import { useWeeklyReview } from './hooks/useWeeklyReview'
-import DistractionBlockerPage from './components/DistractionBlockerPage'
 import { usePushNotifications } from './hooks/usePushNotifications'
-import AICoachPage from './components/AICoachPage'
 import { useAICoach } from './hooks/useAICoach'
 import { useDailyPlanner } from './hooks/useDailyPlanner'
-import TodayPage from './components/TodayPage'
+
+function getDisplayName(user) {
+  if (!user) return ''
+
+  const metadataName = user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.first_name
+  if (metadataName?.trim()) return metadataName.trim()
+
+  return localStorage.getItem(`zatora_display_name_${user.id}`) || ''
+}
 
 export default function ADHDProductivityApp() {
   const {
@@ -58,67 +62,29 @@ export default function ADHDProductivityApp() {
     updatePassword,
     cancelPasswordRecovery,
   } = useAuth()
-  const {
-    dailyPlan,
-    dailyPlanStatus,
-    updateDailyPlan,
-    saveDailyPlan,
-  } = useDailyPlan(user)
-  const {
-    plan,
-    plannerStatus,
-    plannerLoading,
-    plannerError,
-    loadDailyPlan,
-  } = useDailyPlanner(user)
-  const {
-    weeklyReview,
-    weeklyReviewStatus,
-    loadWeeklyReview,
-  } = useWeeklyReview(user)
+  const { dailyPlan, dailyPlanStatus, updateDailyPlan, saveDailyPlan } = useDailyPlan(user)
+  const { plan, plannerStatus, plannerLoading, plannerError, loadDailyPlan } = useDailyPlanner(user)
+  const { weeklyReview, weeklyReviewStatus, loadWeeklyReview } = useWeeklyReview(user)
   const [activeMode, setActiveMode] = useState('Today')
+  const [taskSheetView, setTaskSheetView] = useState('choices')
+  const [displayNameOverride, setDisplayNameOverride] = useState(null)
   const [reminderBanner, setReminderBanner] = useState('')
-  const [bulldogReaction, setBulldogReaction] = useState(null)
-  const [dailyPlanningReminder, setDailyPlanningReminder] = useState('')
+  const [, setBulldogReaction] = useState(null)
+  const [dailyPlanningReminder, setDailyPlanningReminder] = useState(() => {
+    const today = new Date().toISOString().split('T')[0]
+    const lastReminder = localStorage.getItem('focusflow_daily_planning')
+    if (lastReminder === today) return ''
+    localStorage.setItem('focusflow_daily_planning', today)
+    return '📋 Take 2 minutes to set your Top 3 priorities for today.'
+  })
   const [notificationPermission, setNotificationPermission] = useState(
     'Notification' in window ? Notification.permission : 'unsupported'
   )
 
-  useEffect(() => {
-    const today = new Date().toISOString().split('T')[0]
-    const lastReminder = localStorage.getItem('focusflow_daily_planning')
-
-    if (lastReminder !== today) {
-      setDailyPlanningReminder(
-        '📋 Take 2 minutes to set your Top 3 priorities for today.'
-      )
-
-      localStorage.setItem('focusflow_daily_planning', today)
-    }
-  }, [])
-
-  const {
-    currentStreak,
-    longestStreak,
-    updateStreak,
-  } = useStreaks(user)
-  const [timerMinutes, setTimerMinutes] = useState(25)
-  const {
-    xp,
-    level,
-    progressStatus,
-    addXp,
-    getLevelProgress,
-  } = useProgress(user)
-  const {
-    earnedBadges,
-    badgeStatus,
-    awardBadge,
-  } = useBadges(user)
-  const {
-    pushStatus,
-    enablePushNotifications,
-  } = usePushNotifications(user)
+  const { currentStreak, longestStreak, updateStreak } = useStreaks(user)
+  const { xp, level, progressStatus, addXp, getLevelProgress } = useProgress(user)
+  const { earnedBadges, badgeStatus, awardBadge } = useBadges(user)
+  const { pushStatus, enablePushNotifications } = usePushNotifications(user)
   const levelProgress = getLevelProgress()
   const {
     timerSeconds,
@@ -143,10 +109,7 @@ export default function ADHDProductivityApp() {
     activeTasks,
     totalXP,
     focusScore,
-    completedToday,
-    nextTask,
     estimatedFocusMinutes,
-    nextTinyStep,
     updateTaskForm,
     updateEditForm,
     startEditingTask,
@@ -160,6 +123,35 @@ export default function ADHDProductivityApp() {
     setSyncStatus,
     setTasks,
   } = useTasks(user, updateStreak, addXp, awardBadge, setBulldogReaction)
+
+  const {
+    habits,
+    habitName,
+    setHabitName,
+    habitStatus,
+    habitStats,
+    addHabit,
+    toggleHabit,
+    deleteHabit,
+  } = useHabits(user, addXp, awardBadge, setBulldogReaction)
+  const { brainDump, setBrainDump, createBreakdown } = useBrainDump(
+    user,
+    setTasks,
+    setSyncStatus,
+    setActiveMode
+  )
+  const {
+    coachInput,
+    setCoachInput,
+    coachResponse,
+    coachStatus,
+    getCoachResponse,
+    coachTasksAdded,
+    setCoachTasksAdded,
+  } = useAICoach(user, tasks, habits, totalXP)
+  const displayName = displayNameOverride && displayNameOverride.userId === user?.id
+    ? displayNameOverride.value
+    : getDisplayName(user)
 
   async function addCoachTasksToToday(coachTasks) {
     if (coachTasksAdded) return
@@ -181,35 +173,6 @@ export default function ADHDProductivityApp() {
 
     setCoachTasksAdded(true)
   }
-  const {
-    habits,
-    habitName,
-    setHabitName,
-    habitStatus,
-    habitStats,
-    addHabit,
-    toggleHabit,
-    deleteHabit,
-  } = useHabits(user, addXp, awardBadge, setBulldogReaction)
-  const {
-    brainDump,
-    setBrainDump,
-    createBreakdown,
-  } = useBrainDump(user, setTasks, setSyncStatus, setActiveMode)
-  const {
-    coachInput,
-    setCoachInput,
-    coachResponse,
-    coachStatus,
-    getCoachResponse,
-    coachTasksAdded,
-    setCoachTasksAdded,
-  } = useAICoach(
-    user,
-    tasks,
-    habits,
-    totalXP
-  )
 
   useEffect(() => {
     if (!tasks.length) return
@@ -230,26 +193,17 @@ export default function ADHDProductivityApp() {
           if (difference <= 60000 && difference > -120000) {
             setReminderBanner(`Reminder: Time to work on ${task.title}`)
 
-            if (
-              'Notification' in window &&
-              Notification.permission === 'granted'
-            ) {
-              new Notification('FocusFlow Reminder', {
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Zatora Reminder', {
                 body: `Time to work on: ${task.title}`,
                 icon: '/icon-192.png',
               })
             }
 
-            await supabase
-              .from('tasks')
-              .update({ notification_sent: true })
-              .eq('id', task.id)
-
+            await supabase.from('tasks').update({ notification_sent: true }).eq('id', task.id)
             setTasks((current) =>
               current.map((item) =>
-                item.id === task.id
-                  ? { ...item, notification_sent: true }
-                  : item
+                item.id === task.id ? { ...item, notification_sent: true } : item
               )
             )
           }
@@ -258,7 +212,8 @@ export default function ADHDProductivityApp() {
     }, 10000)
 
     return () => clearInterval(interval)
-  }, [tasks])
+  }, [tasks, setTasks])
+
   async function requestNotificationPermission() {
     if (!('Notification' in window)) {
       setReminderBanner('Browser notifications are not supported on this device.')
@@ -266,24 +221,50 @@ export default function ADHDProductivityApp() {
     }
 
     const permission = await Notification.requestPermission()
-
     setNotificationPermission(permission)
+    setReminderBanner(
+      permission === 'granted'
+        ? 'Notifications enabled. Zatora can now notify you when sessions end.'
+        : 'Notifications were not enabled.'
+    )
+  }
 
-    if (permission === 'granted') {
-      setReminderBanner(
-        'Notifications enabled. FocusFlow can now notify you when sessions end.'
-      )
-    } else {
-      setReminderBanner('Notifications were not enabled.')
+  async function enableZatoraNotifications() {
+    await enablePushNotifications()
+    if ('Notification' in window) setNotificationPermission(Notification.permission)
+  }
+
+  function openQuickTask() {
+    setActiveMode('Today')
+    setTaskSheetView('choices')
+    setShowTaskForm(true)
+  }
+
+  async function saveDisplayName(nextDisplayName) {
+    const value = nextDisplayName.trim()
+    if (!user || !value) return 'Display name could not be saved.'
+
+    localStorage.setItem(`zatora_display_name_${user.id}`, value)
+    setDisplayNameOverride({ userId: user.id, value })
+
+    const { error } = await supabase.auth.updateUser({
+      data: { display_name: value },
+    })
+
+    if (error) {
+      console.error('Display name profile update failed:', error)
+      return 'Saved on this device.'
     }
+
+    return 'Display name saved.'
   }
 
   if (isAuthLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6 text-slate-900">
-        <div className="rounded-3xl bg-white p-8 text-center shadow-xl">
-          <h1 className="text-3xl font-bold">FocusFlow</h1>
-          <p className="mt-2 text-slate-500">Checking login status...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#05070c] p-6 text-white">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-8 text-center shadow-xl">
+          <h1 className="text-3xl font-bold">Zatora</h1>
+          <p className="mt-2 text-white/45">Checking login status…</p>
         </div>
       </div>
     )
@@ -320,214 +301,136 @@ export default function ADHDProductivityApp() {
     )
   }
 
+  const homeStatusMessages = [progressStatus, badgeStatus, pushStatus].filter(Boolean)
+
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
-        <Header
-          user={user}
-          signOut={signOut}
-          syncStatus={syncStatus}
-          focusScore={focusScore}
-          totalXP={totalXP}
-          completedTasks={completedTasks}
-          tasks={tasks}
-        />
-        <ReminderBanner
-          reminderBanner={reminderBanner}
-          setReminderBanner={setReminderBanner}
-        />
-
-        {dailyPlanningReminder && (
-          <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-indigo-800">
-            {dailyPlanningReminder}
-          </div>
-        )}
-        <NavigationTabs
-          appModes={appModes}
+    <AppLayout
+      activeMode={activeMode}
+      onNavigate={setActiveMode}
+      onQuickAdd={openQuickTask}
+      topBar={
+        <TopBar
           activeMode={activeMode}
-          setActiveMode={setActiveMode}
+          onNavigate={setActiveMode}
+          notificationPermission={notificationPermission}
+          onSignOut={signOut}
+          syncStatus={syncStatus}
         />
+      }
+    >
+      <ReminderBanner reminderBanner={reminderBanner} setReminderBanner={setReminderBanner} />
 
-        {user && (
-          <section className="mb-5 rounded-3xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-indigo-700">
-                  FocusFlow Level
-                </p>
-                <h2 className="text-2xl font-bold text-indigo-950">
-                  Level {level}
-                </h2>
-              </div>
+      {dailyPlanningReminder && activeMode === 'Today' && (
+        <button
+          type="button"
+          onClick={() => setDailyPlanningReminder('')}
+          className="mb-5 flex w-full items-center justify-between gap-4 rounded-2xl border border-violet-400/15 bg-violet-500/[0.08] px-4 py-3 text-left text-sm text-violet-100/80 transition hover:bg-violet-500/[0.12]"
+        >
+          <span>{dailyPlanningReminder}</span>
+          <span className="text-xl text-white/40" aria-hidden="true">×</span>
+        </button>
+      )}
 
-              <div className="text-left sm:text-right">
-                <p className="text-sm font-semibold text-indigo-700">
-                  Total XP
-                </p>
-                <p className="text-2xl font-bold text-indigo-950">
-                  {xp} XP
-                </p>
-              </div>
-            </div>
+      {activeMode === 'Today' && homeStatusMessages.length > 0 && (
+        <div className="mb-5 space-y-2" aria-live="polite">
+          {homeStatusMessages.map((status) => (
+            <p key={status} className="rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2.5 text-xs font-medium text-white/55">
+              {status}
+            </p>
+          ))}
+        </div>
+      )}
 
-            <div className="mt-4">
-              <div className="mb-2 flex items-center justify-between text-sm font-semibold text-indigo-800">
-                <span>
-                  {levelProgress.isMaxLevel
-                    ? 'Max level reached'
-                    : `${levelProgress.xpIntoLevel} / ${levelProgress.xpNeededForNextLevel} XP to next level`}
-                </span>
+      {isLoading && (
+        <div className="rounded-[1.6rem] border border-white/[0.07] bg-white/[0.04] p-8 text-center">
+          <h2 className="text-xl font-semibold text-white">Loading your Zatora plan…</h2>
+          <p className="mt-2 text-sm text-white/45">Connecting securely.</p>
+        </div>
+      )}
 
-                <span>{levelProgress.progressPercent}%</span>
-              </div>
+      {!isLoading && activeMode === 'Today' && (
+        <HomePageV2
+          user={user}
+          displayName={displayName}
+          tasks={tasks}
+          plan={plan}
+          plannerLoading={plannerLoading}
+          plannerStatus={plannerStatus}
+          plannerError={plannerError}
+          loadDailyPlan={loadDailyPlan}
+          onBuildMyDay={() => {}}
+          setActiveMode={setActiveMode}
+          showTaskForm={showTaskForm}
+          setShowTaskForm={setShowTaskForm}
+          taskSheetView={taskSheetView}
+          setTaskSheetView={setTaskSheetView}
+          taskForm={taskForm}
+          setTaskForm={setTaskForm}
+          updateTaskForm={updateTaskForm}
+          handleCreateCustomTask={handleCreateCustomTask}
+          emptyTaskForm={emptyTaskForm}
+          addTinyTask={addTinyTask}
+          editingTaskId={editingTaskId}
+          editForm={editForm}
+          updateEditForm={updateEditForm}
+          saveEditedTask={saveEditedTask}
+          cancelEditingTask={cancelEditingTask}
+          toggleTask={toggleTask}
+          startEditingTask={startEditingTask}
+          deleteTask={deleteTask}
+          estimatedFocusMinutes={estimatedFocusMinutes}
+          focusScore={focusScore}
+          level={level}
+          xp={xp}
+          levelProgress={levelProgress}
+          completedPomodoros={completedPomodoros}
+          habits={habits}
+          habitName={habitName}
+          setHabitName={setHabitName}
+          habitStatus={habitStatus}
+          habitStats={habitStats}
+          addHabit={addHabit}
+          toggleHabit={toggleHabit}
+          deleteHabit={deleteHabit}
+          earnedBadges={earnedBadges}
+        />
+      )}
 
-              <div className="h-4 overflow-hidden rounded-full bg-white">
-                <div
-                  className="h-full rounded-full bg-indigo-600 transition-all duration-500"
-                  style={{ width: `${levelProgress.progressPercent}%` }}
-                />
-              </div>
-            </div>
-
-            {progressStatus && (
-              <p className="mt-3 rounded-2xl bg-white p-3 text-sm font-medium text-indigo-700">
-                {progressStatus}
-              </p>
-            )}
-
-            {badgeStatus && (
-              <p className="mt-3 rounded-2xl bg-amber-100 p-3 text-sm font-semibold text-amber-800">
-                🏆 {badgeStatus}
-              </p>
-            )}
-          </section>
-        )}
-
-        {isLoading && (
-          <main className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-lg">
-            <h2 className="text-2xl font-bold">Loading your FocusFlow tasks...</h2>
-            <p className="mt-2 text-slate-500">Connecting to Supabase.</p>
-          </main>
-        )}
-
-        {!isLoading && activeMode === 'Today' && (
-          <TodayPage
-            tasks={tasks}
-            plan={plan}
-            plannerLoading={plannerLoading}
-            plannerStatus={plannerStatus}
-            plannerError={plannerError}
-            loadDailyPlan={loadDailyPlan}
-            showTaskForm={showTaskForm}
-            setShowTaskForm={setShowTaskForm}
-            taskForm={taskForm}
-            setTaskForm={setTaskForm}
-            updateTaskForm={updateTaskForm}
-            handleCreateCustomTask={handleCreateCustomTask}
-            emptyTaskForm={emptyTaskForm}
-            addTinyTask={addTinyTask}
-            editingTaskId={editingTaskId}
-            editForm={editForm}
-            updateEditForm={updateEditForm}
-            saveEditedTask={saveEditedTask}
-            cancelEditingTask={cancelEditingTask}
-            toggleTask={toggleTask}
-            startEditingTask={startEditingTask}
-            deleteTask={deleteTask}
-            completedToday={completedToday}
-            totalXP={totalXP}
-            activeTasks={activeTasks}
-            estimatedFocusMinutes={estimatedFocusMinutes}
-            nextTask={nextTask}
-            level={level}
-            xp={xp}
-            bulldogReaction={bulldogReaction}
-            setBulldogReaction={setBulldogReaction}
-            completedPomodoros={completedPomodoros}
-            habits={habits}
-            habitName={habitName}
-            setHabitName={setHabitName}
-            habitStatus={habitStatus}
-            habitStats={habitStats}
-            addHabit={addHabit}
-            toggleHabit={toggleHabit}
-            deleteHabit={deleteHabit}
-          />
-        )}
-
-        {!isLoading && activeMode === 'Daily Plan' && (
-          <DailyPlanPage
-            dailyPlan={dailyPlan}
-            dailyPlanStatus={dailyPlanStatus}
-            updateDailyPlan={updateDailyPlan}
-            saveDailyPlan={saveDailyPlan}
-          />
-        )}
-
-        {!isLoading && activeMode === 'Brain Dump' && (
-          <BrainDumpPage
-            brainDump={brainDump}
-            setBrainDump={setBrainDump}
-            createBreakdown={createBreakdown}
-          />
-        )}
-
-        {!isLoading && activeMode === 'Focus Timer' && (
-          <FocusTimerPage
-            requestNotificationPermission={requestNotificationPermission}
-            notificationPermission={notificationPermission}
-            timerSeconds={timerSeconds}
-            formatTimer={formatTimer}
-            selectTimer={selectTimer}
-            isRunning={isRunning}
-            setIsRunning={setIsRunning}
-            resetTimer={resetTimer}
-            completedPomodoros={completedPomodoros}
-          />
-        )}
-
-        {!isLoading && activeMode === 'Progress' && (
-          <ProgressPage
-            focusScore={focusScore}
-            totalXP={totalXP}
-            tasks={tasks}
-            completedTasks={completedTasks}
-            activeTasks={activeTasks}
-            habits={habits}
-            currentStreak={currentStreak}
-            longestStreak={longestStreak}
-            earnedBadges={earnedBadges}
-          />
-        )}
-
-        {!isLoading && activeMode === 'Weekly Review' && (
-          <WeeklyReviewPage
-            weeklyReview={weeklyReview}
-            weeklyReviewStatus={weeklyReviewStatus}
-            loadWeeklyReview={loadWeeklyReview}
-          />
-        )}
-
-        {!isLoading && activeMode === 'Distraction Blocker' && (
-          <DistractionBlockerPage />
-        )}
-
-        {!isLoading && activeMode === 'AI Coach' && (
-          <AICoachPage
-            coachInput={coachInput}
-            setCoachInput={setCoachInput}
-            coachResponse={coachResponse}
-            coachStatus={coachStatus}
-            getCoachResponse={getCoachResponse}
-            addCoachTasksToToday={addCoachTasksToToday}
-            coachTasksAdded={coachTasksAdded}
-          />
-        )}
-      </div>
-    </div>
+      {!isLoading && activeMode !== 'Today' && (
+        <div className={`space-y-5 pt-1 ${activeMode === 'Settings' || activeMode === 'Notifications' ? 'text-white' : 'legacy-page text-slate-900'}`}>
+          {activeMode === 'Daily Plan' && (
+            <DailyPlanPage dailyPlan={dailyPlan} dailyPlanStatus={dailyPlanStatus} updateDailyPlan={updateDailyPlan} saveDailyPlan={saveDailyPlan} />
+          )}
+          {activeMode === 'Brain Dump' && (
+            <BrainDumpPage brainDump={brainDump} setBrainDump={setBrainDump} createBreakdown={createBreakdown} onBack={() => setActiveMode('Today')} />
+          )}
+          {activeMode === 'Focus Timer' && (
+            <FocusTimerPage requestNotificationPermission={requestNotificationPermission} notificationPermission={notificationPermission} timerSeconds={timerSeconds} formatTimer={formatTimer} selectTimer={selectTimer} isRunning={isRunning} setIsRunning={setIsRunning} resetTimer={resetTimer} completedPomodoros={completedPomodoros} />
+          )}
+          {activeMode === 'Progress' && (
+            <ProgressPage focusScore={focusScore} totalXP={totalXP} tasks={tasks} completedTasks={completedTasks} activeTasks={activeTasks} habits={habits} currentStreak={currentStreak} longestStreak={longestStreak} earnedBadges={earnedBadges} />
+          )}
+          {activeMode === 'Weekly Review' && (
+            <WeeklyReviewPage weeklyReview={weeklyReview} weeklyReviewStatus={weeklyReviewStatus} loadWeeklyReview={loadWeeklyReview} />
+          )}
+          {activeMode === 'Distraction Blocker' && <DistractionBlockerPage />}
+          {activeMode === 'AI Coach' && (
+            <AICoachPage coachInput={coachInput} setCoachInput={setCoachInput} coachResponse={coachResponse} coachStatus={coachStatus} getCoachResponse={getCoachResponse} addCoachTasksToToday={addCoachTasksToToday} coachTasksAdded={coachTasksAdded} />
+          )}
+          {activeMode === 'Settings' && (
+            <SettingsPage
+              key={user.id}
+              displayName={displayName}
+              onSaveDisplayName={saveDisplayName}
+              notificationPermission={notificationPermission}
+              onEnableNotifications={enableZatoraNotifications}
+            />
+          )}
+          {activeMode === 'Notifications' && (
+            <NotificationsPage onOpenSettings={() => setActiveMode('Settings')} />
+          )}
+        </div>
+      )}
+    </AppLayout>
   )
 }
-
-
-
-

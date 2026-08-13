@@ -2,9 +2,13 @@ export default function BrainDumpPage({
   brainDump,
   setBrainDump,
   createBreakdown,
+  onBack,
 }) {
   return (
     <main className="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-8">
+      <button type="button" onClick={onBack} className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-100 px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-100" aria-label="Back to Home">
+        <span aria-hidden="true">←</span> Back
+      </button>
       <h2 className="text-3xl font-bold">Brain Dump → Action Splitter</h2>
 
       <p className="mt-2 max-w-2xl text-slate-500">

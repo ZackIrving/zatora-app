@@ -252,8 +252,8 @@ export function useHabits(user, addXp, awardBadge, setBulldogReaction) {
     setHabitStatus(updatedStatus ? 'Habit completed.' : 'Habit unchecked.')
   }
 
-  async function deleteHabit(habit) {
-    const confirmed = window.confirm(`Delete this habit?\n\n${habit.name}`)
+  async function deleteHabit(habit, options = {}) {
+    const confirmed = options.confirmed || window.confirm(`Delete this habit?\n\n${habit.name}`)
     if (!confirmed) return
 
     setHabits((current) => current.filter((item) => item.id !== habit.id))

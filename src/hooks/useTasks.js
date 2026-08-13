@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { emptyTaskForm, starterTasks } from '../constants/appData'
+import { deriveTaskReward } from '../components/home/taskPresentation'
 
 export function useTasks(user, updateStreak, addXp, awardBadge, setBulldogReaction) {
     const [tasks, setTasks] = useState([])
@@ -141,7 +142,7 @@ export function useTasks(user, updateStreak, addXp, awardBadge, setBulldogReacti
             category: taskForm.category,
             energy: taskForm.energy,
             time: taskForm.time,
-            reward: Number(taskForm.reward || 10),
+            reward: deriveTaskReward(taskForm),
             done: false,
             recurring: Boolean(taskForm.recurring),
             recurrence: taskForm.recurring ? taskForm.recurrence || 'daily' : null,
@@ -282,7 +283,7 @@ export function useTasks(user, updateStreak, addXp, awardBadge, setBulldogReacti
             category: editForm.category.trim() || 'Personal',
             energy: editForm.energy,
             time: editForm.time,
-            reward: Number(editForm.reward || 10),
+            reward: deriveTaskReward(editForm),
             recurring: Boolean(editForm.recurring),
             recurrence: editForm.recurring ? editForm.recurrence || 'daily' : null,
         }
@@ -312,10 +313,10 @@ export function useTasks(user, updateStreak, addXp, awardBadge, setBulldogReacti
         setSyncStatus('Synced with Supabase')
     }
 
-    async function deleteTask(taskToDelete) {
+    async function deleteTask(taskToDelete, options = {}) {
         if (!user) return
 
-        const confirmed = window.confirm(`Delete this task?\n\n${taskToDelete.title}`)
+        const confirmed = options.confirmed || window.confirm(`Delete this task?\n\n${taskToDelete.title}`)
         if (!confirmed) return
 
         setTasks((current) => current.filter((task) => task.id !== taskToDelete.id))

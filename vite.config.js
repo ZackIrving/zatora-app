@@ -14,11 +14,11 @@ export default defineConfig({
         navigateFallback: '/index.html',
       },
       manifest: {
-        name: 'FocusFlow ADHD Productivity',
-        short_name: 'FocusFlow',
-        description: 'ADHD-friendly productivity app for focus, tasks, and momentum',
-        theme_color: '#4f46e5',
-        background_color: '#f1f5f9',
+        name: 'Zatora',
+        short_name: 'Zatora',
+        description: 'A calm AI productivity companion powered by Franco',
+        theme_color: '#05070c',
+        background_color: '#05070c',
         display: 'standalone',
         start_url: '/',
         icons: [

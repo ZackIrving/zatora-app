@@ -1,11 +1,11 @@
 {
-    "name": "FocusFlow",
-    "short_name": "FocusFlow",
-    "description": "ADHD-friendly productivity app with tasks, habits, focus timer, XP, and companion motivation.",
+    "name": "Zatora",
+    "short_name": "Zatora",
+    "description": "A calm AI productivity companion powered by Franco.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#f1f5f9",
-    "theme_color": "#4f46e5",
+    "background_color": "#05070c",
+    "theme_color": "#05070c",
     "orientation": "portrait-primary",
     "icons": [
         {
