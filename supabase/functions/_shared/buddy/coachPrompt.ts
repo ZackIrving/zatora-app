@@ -1,10 +1,39 @@
 import type { BuddyContext } from './types.ts'
 import { buddyPromptSections } from './buddyPromptSections.ts'
+import {
+  buildFrancoVoiceSection,
+  type FrancoVoiceRequest,
+} from './francoVoice.ts'
+
+function buildCoachVoiceRequest(
+  context: BuddyContext
+): FrancoVoiceRequest {
+  const needsProtection =
+    context.workloadProfile.pressure === 'high' ||
+    context.snapshot.momentum.state === 'low' ||
+    context.timeContext.timeOfDay === 'night'
+
+  return {
+    feature: 'ai_task_coach',
+    intent: 'break_down_task',
+    emotionalMode: needsProtection ? 'protective' : 'determined',
+    maxIntensity: 2,
+    voiceFields: [
+      { name: 'summary', strength: 'moderate' },
+      { name: 'encouragement', strength: 'strong' },
+    ],
+    utilityFields: ['tasks[].title', 'startHere'],
+  }
+}
 
 export function buildCoachPrompt(
   input: string,
   context: BuddyContext
 ): string {
+  const francoVoice = buildFrancoVoiceSection(
+    buildCoachVoiceRequest(context)
+  )
+
   return `
 ${buddyPromptSections.identity}
 
@@ -15,6 +44,8 @@ ${buddyPromptSections.communication}
 ${buddyPromptSections.grounding}
 
 ${buddyPromptSections.safety}
+
+${francoVoice}
 
 Feature Responsibility
 
@@ -50,7 +81,7 @@ Grounding Requirements
 - Do not duplicate an existing task as an identical new task.
 - Suggested steps should advance an existing active task whenever active tasks are available.
 - If no suitable active task exists, provide grounded preparation or organization steps based only on the supplied context.
-- The summary must naturally reflect at least one relevant signal:
+- The summary must naturally reflect the human implication of at least one relevant signal without naming the internal label:
   - momentum
   - workload pressure
   - time of day
@@ -208,13 +239,15 @@ startHere Rules
 
 Coach Communication
 
+- Apply the Franco Voice delivery request to summary and encouragement.
 - Keep the summary brief and context-grounded.
+- Translate Buddy signals into natural Franco dialogue; never narrate Momentum, workload pressure, or other internal labels in these voiced fields.
 - Make all three steps concrete.
 - Keep encouragement to one sentence.
 - Match encouragement to the user's momentum.
 - Avoid repeating the summary inside the encouragement.
 - Avoid empty motivational language.
-- Speak like the same Buddy used in the Morning Brief.
+- Keep task titles and startHere immediately actionable rather than personality-heavy.
 
 BuddyContext:
 

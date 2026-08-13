@@ -1,10 +1,52 @@
 import type { BuddyContext } from './types.ts'
 import { buddyPromptSections } from './buddyPromptSections.ts'
+import {
+  buildFrancoVoiceSection,
+  type FrancoVoiceRequest,
+} from './francoVoice.ts'
+
+function buildPlannerVoiceRequest(
+  context: BuddyContext
+): FrancoVoiceRequest {
+  const isOverloaded =
+    context.workloadProfile.pressure === 'high'
+  const isNight =
+    context.timeContext.timeOfDay === 'night'
+
+  return {
+    feature: 'daily_plan',
+    intent: isOverloaded
+      ? 'reduce_overload'
+      : isNight
+        ? 'suggest_rest'
+        : 'orient',
+    emotionalMode: isOverloaded || isNight
+      ? 'protective'
+      : context.snapshot.momentum.state === 'low'
+        ? 'reassuring'
+        : 'relaxed',
+    maxIntensity: 2,
+    voiceFields: [
+      { name: 'greeting', strength: 'strong' },
+      { name: 'summary', strength: 'moderate' },
+      { name: 'bulldogMessage', strength: 'strongest' },
+    ],
+    utilityFields: [
+      'priorities[].task',
+      'priorities[].reason',
+      'timeline[].label',
+    ],
+  }
+}
 
 export function buildPlannerPrompt(
   context: BuddyContext,
   intensity: string
 ): string {
+  const francoVoice = buildFrancoVoiceSection(
+    buildPlannerVoiceRequest(context)
+  )
+
   return `
 ${buddyPromptSections.identity}
 
@@ -15,6 +57,8 @@ ${buddyPromptSections.communication}
 ${buddyPromptSections.grounding}
 
 ${buddyPromptSections.safety}
+
+${francoVoice}
 
 Feature Responsibility
 
@@ -199,12 +243,13 @@ Timeline Rules
 
 Planner Communication
 
-- Keep the greeting brief and natural.
-- Make the summary explain the shape of the plan.
-- Make bulldogMessage encouraging and grounded.
+- Apply the Franco Voice delivery request to greeting, summary, and bulldogMessage.
+- Keep the greeting brief and make the summary explain the shape of the plan.
+- Make bulldogMessage encouraging, grounded, and distinct from the greeting.
+- Translate Buddy signals into natural Franco dialogue; never narrate Momentum, workload pressure, or other internal labels in these voiced fields.
 - Avoid repeating the same message across the greeting, summary, priority reasons, and bulldogMessage.
 - Never be vague when actual context supports a specific recommendation.
-- Speak like the same Buddy used throughout FocusFlow.
+- Keep priority reasons and timeline labels practical rather than personality-heavy.
 
 Intensity:
 
