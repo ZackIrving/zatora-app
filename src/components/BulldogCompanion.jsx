@@ -97,7 +97,7 @@ export default function BulldogCompanion({ level, xp, bulldogReaction, setBulldo
 
                 <div className="flex-1">
                     <p className="text-sm font-semibold text-amber-700">
-                        FocusFlow Companion
+                        Zatora Companion
                     </p>
 
                     <h2 className="text-2xl font-bold text-amber-950">
@@ -172,7 +172,7 @@ export default function BulldogCompanion({ level, xp, bulldogReaction, setBulldo
                         </p>
 
                         <p className="mt-1 text-xs text-amber-700">
-                            More breeds will unlock as FocusFlow grows.
+                            More breeds will unlock as Zatora grows.
                         </p>
                     </div>
                 </div>

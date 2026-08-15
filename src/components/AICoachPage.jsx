@@ -16,7 +16,7 @@ export default function AICoachPage({
             <h2 className="text-3xl font-bold">AI Task Coach</h2>
 
             <p className="mt-2 text-slate-500">
-                Dump what feels overwhelming. FocusFlow will turn it into three tiny next steps.
+                Dump what feels overwhelming. Zatora will turn it into three tiny next steps.
             </p>
 
             <form onSubmit={getCoachResponse} className="mt-6 space-y-4">

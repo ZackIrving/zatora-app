@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { emptyTaskForm, starterTasks } from '../constants/appData'
 import { deriveTaskReward } from '../components/home/taskPresentation'
+import { getMigratedLocalStorageValue } from '../utils/localStorage'
 
 export function useTasks(user, updateStreak, addXp, awardBadge, setBulldogReaction) {
     const [tasks, setTasks] = useState([])
@@ -34,7 +35,10 @@ export function useTasks(user, updateStreak, addXp, awardBadge, setBulldogReacti
         if (error) {
             console.error('Error loading tasks:', error)
 
-            const cachedTasks = localStorage.getItem('focusflow_tasks')
+            const cachedTasks = getMigratedLocalStorageValue(
+                'zatora_tasks',
+                'focusflow_tasks'
+            )
 
             if (cachedTasks) {
                 setTasks(JSON.parse(cachedTasks))
@@ -64,7 +68,7 @@ export function useTasks(user, updateStreak, addXp, awardBadge, setBulldogReacti
                 setSyncStatus('Starter tasks could not save to Supabase.')
             } else {
                 setTasks(data)
-                localStorage.setItem('focusflow_tasks', JSON.stringify(data))
+                localStorage.setItem('zatora_tasks', JSON.stringify(data))
                 setSyncStatus('Synced with Supabase')
             }
         } else {

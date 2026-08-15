@@ -83,7 +83,7 @@ export function useFocusTimer(setReminderBanner, user, addXp, awardBadge, setBul
           )
 
           sendBrowserNotification(
-            'FocusFlow',
+            'Zatora',
             'Focus session complete. Take a short break.'
           )
 

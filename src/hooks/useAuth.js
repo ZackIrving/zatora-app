@@ -21,7 +21,7 @@ export function useAuth() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
 
   const [authStatus, setAuthStatus] = useState(
-    'Sign in or create an account to use FocusFlow.'
+    'Sign in or create an account to use Zatora.'
   )
 
   const [passwordRecoveryStatus, setPasswordRecoveryStatus] = useState(

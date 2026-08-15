@@ -73,7 +73,7 @@ export default function AuthScreen({
               <button type="button" onClick={signUp} disabled={isAuthSubmitting} className="min-h-13 rounded-2xl border border-white/10 bg-white/[0.06] px-5 font-semibold text-white/80 transition hover:bg-white/[0.1] hover:text-white disabled:cursor-not-allowed disabled:opacity-60">Create Account</button>
             </div>
 
-            <p aria-live="polite" className="mt-5 rounded-2xl border border-white/[0.06] bg-white/[0.035] p-4 text-sm leading-6 text-white/50">{authStatus?.replaceAll('FocusFlow', 'Zatora')}</p>
+            <p aria-live="polite" className="mt-5 rounded-2xl border border-white/[0.06] bg-white/[0.035] p-4 text-sm leading-6 text-white/50">{authStatus}</p>
           </div>
         </section>
       </main>

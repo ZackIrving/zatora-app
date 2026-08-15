@@ -27,7 +27,7 @@ export default function ResetPasswordScreen({
           </h1>
 
           <p className="mt-3 text-slate-600">
-            Choose a new password for your FocusFlow account.
+            Choose a new password for your Zatora account.
           </p>
 
           <div className="mt-6 space-y-4">

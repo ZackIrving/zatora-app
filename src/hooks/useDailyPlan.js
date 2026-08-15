@@ -55,11 +55,16 @@ export function useDailyPlan(user) {
 
     setDailyPlanStatus('Saving daily plan...')
 
-    const { error } = await supabase.from('daily_plans').upsert({
-      user_id: user.id,
-      plan_date: today,
-      ...dailyPlan,
-    })
+    const { error } = await supabase
+      .from('daily_plans')
+      .upsert(
+        {
+          user_id: user.id,
+          plan_date: today,
+          ...dailyPlan,
+        },
+        { onConflict: 'user_id,plan_date' },
+      )
 
     if (error) {
       console.error('Error saving daily plan:', error)

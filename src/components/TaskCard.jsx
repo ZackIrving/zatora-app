@@ -22,7 +22,7 @@ export default function TaskCard({
     const url = new URL('https://calendar.google.com/calendar/render')
     url.searchParams.set('action', 'TEMPLATE')
     url.searchParams.set('text', task.title)
-    url.searchParams.set('details', `FocusFlow task: ${task.category}`)
+    url.searchParams.set('details', `Zatora task: ${task.category}`)
     url.searchParams.set('dates', `${formatDate(startDate)}/${formatDate(endDate)}`)
 
     window.open(url.toString(), '_blank')

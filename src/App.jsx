@@ -26,6 +26,7 @@ import { useDailyPlan } from './hooks/useDailyPlan'
 import { useProgress } from './hooks/useProgress'
 import { useBadges } from './hooks/useBadges'
 import { useWeeklyReview } from './hooks/useWeeklyReview'
+import { getMigratedLocalStorageValue } from './utils/localStorage'
 import { usePushNotifications } from './hooks/usePushNotifications'
 import { useAICoach } from './hooks/useAICoach'
 import { useDailyPlanner } from './hooks/useDailyPlanner'
@@ -72,9 +73,12 @@ export default function ADHDProductivityApp() {
   const [, setBulldogReaction] = useState(null)
   const [dailyPlanningReminder, setDailyPlanningReminder] = useState(() => {
     const today = new Date().toISOString().split('T')[0]
-    const lastReminder = localStorage.getItem('focusflow_daily_planning')
+    const lastReminder = getMigratedLocalStorageValue(
+      'zatora_daily_planning',
+      'focusflow_daily_planning'
+    )
     if (lastReminder === today) return ''
-    localStorage.setItem('focusflow_daily_planning', today)
+    localStorage.setItem('zatora_daily_planning', today)
     return '📋 Take 2 minutes to set your Top 3 priorities for today.'
   })
   const [notificationPermission, setNotificationPermission] = useState(
@@ -397,9 +401,16 @@ export default function ADHDProductivityApp() {
       )}
 
       {!isLoading && activeMode !== 'Today' && (
-        <div className={`space-y-5 pt-1 ${activeMode === 'Settings' || activeMode === 'Notifications' ? 'text-white' : 'legacy-page text-slate-900'}`}>
+        <div className={`space-y-5 pt-1 ${activeMode === 'Settings' || activeMode === 'Notifications' || activeMode === 'Daily Plan' ? 'text-white' : 'legacy-page text-slate-900'}`}>
           {activeMode === 'Daily Plan' && (
-            <DailyPlanPage dailyPlan={dailyPlan} dailyPlanStatus={dailyPlanStatus} updateDailyPlan={updateDailyPlan} saveDailyPlan={saveDailyPlan} />
+            <DailyPlanPage
+              dailyPlan={dailyPlan}
+              dailyPlanStatus={dailyPlanStatus}
+              updateDailyPlan={updateDailyPlan}
+              saveDailyPlan={saveDailyPlan}
+              francoMessage={plan?.bulldog_message || ''}
+              francoAvailable={Boolean(plan?.bulldog_message) && !plannerLoading}
+            />
           )}
           {activeMode === 'Brain Dump' && (
             <BrainDumpPage brainDump={brainDump} setBrainDump={setBrainDump} createBreakdown={createBreakdown} onBack={() => setActiveMode('Today')} />

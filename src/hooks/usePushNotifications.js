@@ -41,7 +41,7 @@ export function usePushNotifications(user) {
 
         if (permission !== 'granted') {
             setPushStatus(
-                'Push notifications were not enabled. Check your browser site settings and allow notifications for FocusFlow.'
+                'Push notifications were not enabled. Check your browser site settings and allow notifications for Zatora.'
             )
             return
         }

@@ -18,7 +18,7 @@ export default function Header({
           </p>
 
           <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
-            FocusFlow ADHD Productivity
+            Zatora ADHD Productivity
           </h1>
 
           <p className="mt-3 max-w-2xl text-base text-slate-600 sm:text-lg">

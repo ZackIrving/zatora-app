@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focusflow-cache-v1'
+const CACHE_NAME = 'zatora-cache-v1'
 
 const urlsToCache = [
     '/',
@@ -36,9 +36,9 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
     const data = event.data ? event.data.json() : {}
 
-    const title = data.title || 'FocusFlow'
+    const title = data.title || 'Zatora'
     const options = {
-        body: data.body || 'You have a FocusFlow reminder.',
+        body: data.body || 'You have a Zatora reminder.',
         icon: '/icon-192.png',
         badge: '/icon-192.png',
     }

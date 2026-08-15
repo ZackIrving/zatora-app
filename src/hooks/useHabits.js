@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { getMigratedLocalStorageValue } from '../utils/localStorage'
 
 console.log('useHabits file loaded')
 
@@ -27,7 +28,10 @@ export function useHabits(user, addXp, awardBadge, setBulldogReaction) {
     if (error) {
       console.error('Error loading habits:', error)
 
-      const cachedHabits = localStorage.getItem('focusflow_habits')
+      const cachedHabits = getMigratedLocalStorageValue(
+        'zatora_habits',
+        'focusflow_habits'
+      )
 
       if (cachedHabits) {
         setHabits(JSON.parse(cachedHabits))
@@ -48,7 +52,7 @@ export function useHabits(user, addXp, awardBadge, setBulldogReaction) {
     }))
 
     setHabits(resetHabits)
-    localStorage.setItem('focusflow_habits', JSON.stringify(resetHabits))
+    localStorage.setItem('zatora_habits', JSON.stringify(resetHabits))
     await loadHabitStats(resetHabits)
   }
 
