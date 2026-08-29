@@ -21,7 +21,7 @@ export function useAuth() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
 
   const [authStatus, setAuthStatus] = useState(
-    'Sign in or create an account to use Zatora.'
+    'Sign in to return to your Zatora progress.'
   )
 
   const [passwordRecoveryStatus, setPasswordRecoveryStatus] = useState(

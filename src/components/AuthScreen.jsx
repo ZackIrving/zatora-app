@@ -1,6 +1,9 @@
-import adultBulldog from '../assets/bulldog/adult-bulldog.png'
+import AuthForm from './auth/AuthForm'
+import FrancoWelcomeVisual from './welcome/FrancoWelcomeVisual'
 
 export default function AuthScreen({
+  mode = 'signin',
+  onBackToWelcome,
   authEmail,
   setAuthEmail,
   authPassword,
@@ -11,69 +14,66 @@ export default function AuthScreen({
   signUp,
   requestPasswordReset,
 }) {
-  function handlePasswordKeyDown(event) {
-    if (event.key === 'Enter' && !isAuthSubmitting) signIn()
-  }
+  const isAccountConversion = mode === 'account-conversion'
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#05070c] p-4 text-white sm:p-6">
-      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-        <div className="absolute left-[-8rem] top-[-8rem] h-[28rem] w-[28rem] rounded-full bg-violet-700/15 blur-[120px]" />
-        <div className="absolute bottom-[-10rem] right-[-5rem] h-[32rem] w-[32rem] rounded-full bg-amber-500/10 blur-[130px]" />
+    <div className="relative min-h-screen min-h-[100svh] overflow-x-hidden bg-[#05070c] text-white">
+      <div className="pointer-events-none fixed inset-0" aria-hidden="true">
+        <div className="absolute left-1/2 top-[-18rem] h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-violet-700/10 blur-[120px] lg:left-[24%]" />
+        <div className="absolute bottom-[-18rem] right-[-12rem] h-[36rem] w-[36rem] rounded-full bg-amber-400/[0.07] blur-[140px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] [mask-image:linear-gradient(to_bottom,black,transparent_72%)]" />
       </div>
 
-      <main className="relative mx-auto grid min-h-[calc(100vh-2rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#0b0e15]/92 shadow-[0_35px_120px_rgba(0,0,0,0.55)] sm:min-h-[calc(100vh-3rem)] lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="relative hidden min-h-full overflow-hidden border-r border-white/[0.07] bg-[radial-gradient(circle_at_50%_30%,rgba(139,92,246,0.26),transparent_42%),linear-gradient(145deg,#121725,#080a10)] p-10 lg:flex lg:flex-col lg:justify-between">
-          <div className="relative z-10">
-            <div className="flex items-center gap-3">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl border border-white/15 bg-white/[0.07] text-3xl font-black italic text-violet-400">Z</span>
-              <span className="text-sm font-semibold uppercase tracking-[0.24em] text-white/70">Zatora</span>
+      <main className="relative mx-auto grid min-h-screen min-h-[100svh] w-full max-w-7xl content-center gap-6 px-4 py-5 sm:gap-8 sm:px-7 sm:py-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(24rem,0.92fr)] lg:items-center lg:gap-14 lg:px-10 lg:py-10 xl:gap-24">
+        <section className="relative mx-auto w-full max-w-2xl lg:max-w-none">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl border border-violet-300/20 bg-violet-400/[0.08] text-xl font-black italic text-violet-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:h-12 sm:w-12 sm:rounded-2xl sm:text-2xl">Z</span>
+            <div>
+              <p className="text-sm font-bold tracking-[0.28em] text-white/90 sm:text-base">ZATORA</p>
+              <p className="mt-0.5 text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-violet-300/55 sm:text-xs">Focus. Grow. Become.</p>
             </div>
-            <p className="mt-12 max-w-md font-serif text-4xl leading-[1.12] tracking-[-0.035em] text-white">Build focus that feels natural, one small win at a time.</p>
           </div>
 
-          <div className="relative z-10 mx-auto mt-6 h-[27rem] w-[27rem] max-w-full overflow-hidden rounded-full border border-white/10 bg-amber-300/[0.08] shadow-[0_0_90px_rgba(245,158,11,0.12)]">
-            <img src={adultBulldog} alt="Franco, Zatora's English Bulldog mascot" className="h-full w-full scale-110 object-cover object-center" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#080a10]/45 via-transparent to-transparent" />
+          <div className="mt-4 grid grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-4 sm:mt-7 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-7 lg:mt-8 lg:grid-cols-[minmax(18rem,0.95fr)_minmax(13rem,0.72fr)] lg:gap-6 xl:grid-cols-[minmax(21rem,1fr)_minmax(14rem,0.7fr)]">
+            <FrancoWelcomeVisual compact />
+            <div className="relative z-10">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-amber-200/60 sm:text-xs">Existing pack member</p>
+              <h1 className="mt-2 font-serif text-3xl font-semibold leading-none tracking-[-0.04em] text-white sm:text-4xl lg:text-5xl">Welcome back.</h1>
+              <p className="mt-3 max-w-sm text-sm leading-6 text-white/52 sm:text-base sm:leading-7">Sign in and pick up where you left off with Franco.</p>
+            </div>
           </div>
-          <p className="relative z-10 text-sm text-white/45">Meet Franco, your steady productivity companion.</p>
         </section>
 
-        <section className="flex items-center p-5 sm:p-10 lg:p-14">
-          <div className="mx-auto w-full max-w-md">
-            <div className="mb-9 lg:hidden">
-              <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl border border-white/15 bg-white/[0.07] text-3xl font-black italic text-violet-400">Z</span>
-                <div><p className="text-lg font-bold tracking-wide">Zatora</p><p className="text-xs text-white/40">Powered by Franco</p></div>
-              </div>
+        <section className="mx-auto w-full max-w-lg lg:max-w-none">
+          <div className="rounded-[1.75rem] border border-white/[0.09] bg-[#0d111b]/94 p-5 shadow-[0_28px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-8 lg:p-9 xl:p-10">
+            {onBackToWelcome && (
+              <button type="button" onClick={onBackToWelcome} className="mb-6 rounded-lg text-sm font-semibold text-white/55 transition hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-4 focus-visible:ring-offset-[#0d111b]">
+                <span aria-hidden="true">←</span> Back to Welcome
+              </button>
+            )}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/70">{isAccountConversion ? 'Keep what you started' : 'Sign in to Zatora'}</p>
+              <h2 className="mt-3 font-serif text-3xl font-semibold tracking-[-0.035em] text-white sm:text-4xl">{isAccountConversion ? 'Make it yours.' : 'Your next step is waiting.'}</h2>
+              <p className="mt-3 text-sm leading-6 text-white/45">
+                {isAccountConversion
+                  ? 'Create an account to save your progress when account conversion arrives.'
+                  : 'Use the account you already created to return to your tasks, habits, and progress.'}
+              </p>
             </div>
-
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/75">Welcome back</p>
-            <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">Your day starts here.</h1>
-            <p className="mt-4 text-sm leading-6 text-white/45">Sign in to sync your tasks, XP, habits, and progress across your devices.</p>
-
-            <div className="mt-8 space-y-4">
-              <label className="block">
-                <span className="text-sm font-medium text-white/65">Email</span>
-                <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} autoComplete="email" disabled={isAuthSubmitting} className="zatora-input mt-2 min-h-14 rounded-2xl bg-black/25 px-4 disabled:cursor-not-allowed disabled:opacity-50" placeholder="you@example.com" />
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-medium text-white/65">Password</span>
-                <input type="password" value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} onKeyDown={handlePasswordKeyDown} autoComplete="current-password" disabled={isAuthSubmitting} className="zatora-input mt-2 min-h-14 rounded-2xl bg-black/25 px-4 disabled:cursor-not-allowed disabled:opacity-50" placeholder="Use at least 6 characters" />
-              </label>
-
-              <div className="text-right">
-                <button type="button" onClick={requestPasswordReset} disabled={isAuthSubmitting} className="text-sm font-semibold text-violet-300 transition hover:text-violet-200 disabled:cursor-not-allowed disabled:opacity-50">Forgot password?</button>
-              </div>
+            <div className="mt-7">
+              <AuthForm
+                mode={mode}
+                authEmail={authEmail}
+                setAuthEmail={setAuthEmail}
+                authPassword={authPassword}
+                setAuthPassword={setAuthPassword}
+                authStatus={authStatus}
+                isAuthSubmitting={isAuthSubmitting}
+                signIn={signIn}
+                signUp={signUp}
+                requestPasswordReset={requestPasswordReset}
+              />
             </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button type="button" onClick={signIn} disabled={isAuthSubmitting} className="min-h-13 rounded-2xl bg-violet-500 px-5 font-bold text-white shadow-[0_12px_35px_rgba(124,58,237,0.28)] transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-60">{isAuthSubmitting ? 'Please wait…' : 'Sign In'}</button>
-              <button type="button" onClick={signUp} disabled={isAuthSubmitting} className="min-h-13 rounded-2xl border border-white/10 bg-white/[0.06] px-5 font-semibold text-white/80 transition hover:bg-white/[0.1] hover:text-white disabled:cursor-not-allowed disabled:opacity-60">Create Account</button>
-            </div>
-
-            <p aria-live="polite" className="mt-5 rounded-2xl border border-white/[0.06] bg-white/[0.035] p-4 text-sm leading-6 text-white/50">{authStatus}</p>
           </div>
         </section>
       </main>
