@@ -1,10 +1,26 @@
+import { useEffect } from 'react'
 import AuthenticatedApp from './components/AuthenticatedApp'
 import ResetPasswordScreen from './components/ResetPasswordScreen'
 import WelcomeExperience from './components/welcome/WelcomeExperience'
 import { useAuth } from './hooks/useAuth'
+import { useGuestOnboarding } from './hooks/useGuestOnboarding'
+import { shouldClearGuestDraftAfterAuthentication } from './hooks/guestOnboardingState'
 
 export default function ADHDProductivityApp() {
   const auth = useAuth()
+  const guestOnboarding = useGuestOnboarding()
+  const guestDraft = guestOnboarding.draft
+  const resetGuestOnboarding = guestOnboarding.reset
+
+  useEffect(() => {
+    if (shouldClearGuestDraftAfterAuthentication(
+      auth.user,
+      guestDraft,
+      auth.isPasswordRecovery
+    )) {
+      resetGuestOnboarding()
+    }
+  }, [auth.isPasswordRecovery, auth.user, guestDraft, resetGuestOnboarding])
 
   if (auth.isAuthLoading) {
     return (
@@ -45,7 +61,12 @@ export default function ADHDProductivityApp() {
       requestPasswordReset: auth.requestPasswordReset,
     }
 
-    return <WelcomeExperience authProps={authProps} />
+    return (
+      <WelcomeExperience
+        authProps={authProps}
+        guestOnboarding={guestOnboarding}
+      />
+    )
   }
 
   return <AuthenticatedApp user={auth.user} signOut={auth.signOut} />

@@ -1,7 +1,10 @@
-import temporaryTinyPuppyFranco from '../../assets/bulldog/puppy-stage-1.png'
+import tinyPuppyFrancoNeutral from '../../assets/franco/characters/tiny-puppy/franco-tiny-puppy-neutral.png'
 
-// Final Tiny Puppy Franco and Den artwork will replace this isolated temporary asset.
-export default function FrancoWelcomeVisual({ compact = false }) {
+export default function FrancoWelcomeVisual({
+  compact = false,
+  imageSrc = tinyPuppyFrancoNeutral,
+  alt = "Franco, Zatora's Tiny Puppy English Bulldog companion",
+}) {
   return (
     <div className={`relative isolate mx-auto aspect-square w-full ${compact ? 'max-w-48 sm:max-w-64' : 'max-w-72 sm:max-w-sm lg:max-w-md'}`}>
       <div className="absolute inset-[12%] rounded-full bg-amber-300/15 blur-3xl" aria-hidden="true" />
@@ -10,8 +13,8 @@ export default function FrancoWelcomeVisual({ compact = false }) {
         aria-hidden="true"
       />
       <img
-        src={temporaryTinyPuppyFranco}
-        alt="Franco, Zatora's English Bulldog companion"
+        src={imageSrc}
+        alt={alt}
         className="animate-bulldog-idle relative z-10 h-full w-full object-contain drop-shadow-[0_22px_30px_rgba(0,0,0,0.38)]"
       />
     </div>
