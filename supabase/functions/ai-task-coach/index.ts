@@ -1,152 +1,146 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { buildBuddyContext } from '../_shared/buddy/contextBuilder.ts'
-import { buildCoachPrompt } from '../_shared/buddy/coachPrompt.ts'
-import { generateTextWithOpenAI } from '../_shared/buddy/openai.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
+import {
+  InvalidAIResponseError,
+  validateCoachResponse,
+} from '../_shared/buddy/aiResponseValidation.ts'
+import { authenticateCaller } from '../_shared/buddy/auth.ts'
+import { buildCoachPrompt } from '../_shared/buddy/coachPrompt.ts'
+import {
+  BuddyContextQueryError,
+  buildBuddyContext,
+} from '../_shared/buddy/contextBuilder.ts'
+import {
+  HttpError,
+  corsHeaders,
+  createRequestId,
+  errorResponse,
+  jsonResponse,
+  logOpenAIRequestFailure,
+  logRequestFailure,
+} from '../_shared/buddy/http.ts'
+import {
+  OpenAIRequestError,
+  generateTextWithOpenAI,
+} from '../_shared/buddy/openai.ts'
+import {
+  assertLegacyUserIdMatches,
+  parseCoachRequest,
+  readJsonBody,
+} from '../_shared/buddy/requestValidation.ts'
+
+function normalizeError(error: unknown): HttpError {
+  if (error instanceof HttpError) return error
+
+  if (error instanceof BuddyContextQueryError) {
+    return new HttpError(
+      500,
+      'context_unavailable',
+      'Unable to load AI Coach context.'
+    )
+  }
+
+  if (error instanceof InvalidAIResponseError) {
+    return new HttpError(
+      502,
+      'invalid_ai_response',
+      'AI Coach returned an invalid response.'
+    )
+  }
+
+  if (error instanceof OpenAIRequestError) {
+    if (error.code === 'timeout') {
+      return new HttpError(
+        504,
+        'ai_timeout',
+        'AI Coach timed out.'
+      )
+    }
+
+    if (error.code === 'configuration') {
+      return new HttpError(
+        500,
+        'ai_configuration_error',
+        'AI Coach is temporarily unavailable.'
+      )
+    }
+
+    return new HttpError(
+      502,
+      'ai_provider_failure',
+      'AI Coach is temporarily unavailable.'
+    )
+  }
+
+  return new HttpError(
+    500,
+    'internal_error',
+    'AI Coach is temporarily unavailable.'
+  )
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: corsHeaders,
-    })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', {
-      status: 405,
-      headers: corsHeaders,
-    })
+    return jsonResponse(
+      {
+        success: false,
+        error: 'Method not allowed.',
+        code: 'method_not_allowed',
+      },
+      405
+    )
   }
 
+  const requestId = createRequestId()
+
   try {
-    const { input, userId } = await req.json()
+    const { callerId, supabase } = await authenticateCaller(req)
+    const body = await readJsonBody(req)
+    const coachRequest = parseCoachRequest(body)
 
-    if (!input?.trim()) {
-      return new Response(
-        JSON.stringify({
-          error: 'Missing input',
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-    }
-
-    if (!userId) {
-      return new Response(
-        JSON.stringify({
-          error: 'Missing userId',
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    assertLegacyUserIdMatches(
+      coachRequest.legacyUserId,
+      callerId
     )
 
     const context = await buildBuddyContext(
       supabase,
-      userId
+      callerId
     )
-
     const prompt = buildCoachPrompt(
-      input.trim(),
+      coachRequest.input,
       context
     )
+    const aiResult = await generateTextWithOpenAI(prompt)
 
-    const aiResult =
-      await generateTextWithOpenAI(prompt)
+    validateCoachResponse(aiResult.outputText)
 
-    console.log(
-      'AI Coach OpenAI Status:',
-      aiResult.status
-    )
-
-    console.log(
-      'AI Coach Buddy Context:',
-      JSON.stringify(context, null, 2)
-    )
-
-    if (aiResult.status !== 200) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          openai: aiResult.raw,
-        }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-    }
-
-    try {
-      JSON.parse(aiResult.outputText)
-    } catch (parseError) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Invalid AI Coach JSON: ${String(parseError)}`,
-          outputText: aiResult.outputText,
-        }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-    }
-
-    return new Response(
-      JSON.stringify({
-        status: aiResult.status,
-        result: aiResult.outputText,
-      }),
-      {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+    return jsonResponse({
+      status: aiResult.status,
+      result: aiResult.outputText,
+    })
   } catch (error) {
-    console.error('AI Coach Edge Function error:', error)
+    if (error instanceof OpenAIRequestError) {
+      logOpenAIRequestFailure(
+        'ai-task-coach',
+        requestId,
+        error.code,
+        error.providerStatus
+      )
+    }
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: String(error),
-      }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      }
+    const normalizedError = normalizeError(error)
+
+    logRequestFailure(
+      'ai-task-coach',
+      requestId,
+      normalizedError.code
     )
+
+    return errorResponse(normalizedError)
   }
 })

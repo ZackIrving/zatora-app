@@ -12,9 +12,38 @@ import {
   calculateWorkloadProfile,
 } from './workload.ts'
 
+const MAX_CONTEXT_TASKS = 200
+const MAX_CONTEXT_HABITS = 100
+const MAX_CONTEXT_TEXT_LENGTH = 500
+
+export class BuddyContextQueryError extends Error {
+  readonly source: string
+
+  constructor(source: string) {
+    super('Buddy context query failed')
+    this.name = 'BuddyContextQueryError'
+    this.source = source
+  }
+}
+
+function assertQuerySucceeded(
+  source: string,
+  result: { error?: unknown }
+): void {
+  if (result.error) throw new BuddyContextQueryError(source)
+}
+
+function boundText(value: string): string {
+  return Array.from(value).slice(0, MAX_CONTEXT_TEXT_LENGTH).join('')
+}
+
+function boundNullableText(value: string | null): string | null {
+  return value === null ? null : boundText(value)
+}
+
 export async function buildBuddyContext(
   supabase: any,
-  userId: string
+  callerId: string
 ): Promise<BuddyContext> {
   const [
     tasksResult,
@@ -25,35 +54,61 @@ export async function buildBuddyContext(
   ] = await Promise.all([
     supabase
       .from('tasks')
-      .select('*')
-      .eq('user_id', userId),
+      .select(
+        'title,category,energy,time,reward,done,recurring,recurrence,created_at'
+      )
+      .eq('user_id', callerId)
+      .order('created_at', { ascending: false })
+      .limit(MAX_CONTEXT_TASKS),
 
     supabase
       .from('habits')
-      .select('*')
-      .eq('user_id', userId),
+      .select('name,completed_today,created_at')
+      .eq('user_id', callerId)
+      .order('created_at', { ascending: false })
+      .limit(MAX_CONTEXT_HABITS),
 
     supabase
       .from('user_progress')
-      .select('*')
-      .eq('user_id', userId)
+      .select('xp,level')
+      .eq('user_id', callerId)
       .maybeSingle(),
 
     supabase
       .from('pomodoro_sessions')
-      .select('*')
-      .eq('user_id', userId)
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', callerId)
       .eq('completed', true),
 
     supabase
       .from('user_stats')
-      .select('*')
-      .eq('user_id', userId)
+      .select('current_streak')
+      .eq('user_id', callerId)
       .maybeSingle(),
   ])
 
-  const typedTasks = (tasksResult.data || []) as BuddyTask[]
-  const typedHabits = (habitsResult.data || []) as BuddyHabit[]
+  assertQuerySucceeded('tasks', tasksResult)
+  assertQuerySucceeded('habits', habitsResult)
+  assertQuerySucceeded('user_progress', progressResult)
+  assertQuerySucceeded('pomodoro_sessions', pomodorosResult)
+  assertQuerySucceeded('user_stats', streakResult)
+
+  const typedTasks = ((tasksResult.data || []) as BuddyTask[]).map(
+    (task) => ({
+      ...task,
+      title: boundText(task.title),
+      category: boundNullableText(task.category),
+      energy: boundNullableText(task.energy),
+      time: boundNullableText(task.time),
+      recurrence: boundNullableText(task.recurrence),
+    })
+  )
+  const typedHabits = ((habitsResult.data || []) as BuddyHabit[]).map(
+    (habit) => ({
+      ...habit,
+      name: boundText(habit.name),
+    })
+  )
 
   const activeTasks = typedTasks.filter(
     (task) => !task.done
@@ -72,7 +127,7 @@ export async function buildBuddyContext(
   )
 
   const completedPomodoros =
-    pomodorosResult.data?.length ?? 0
+    pomodorosResult.count ?? 0
 
   const currentStreak =
     streakResult.data?.current_streak ?? 0
@@ -101,8 +156,6 @@ export async function buildBuddyContext(
   const timeContext = buildTimeContext()
 
   return {
-    userId,
-
     snapshot: {
       activeTasks: activeTasks.length,
       completedTasks: completedTasks.length,

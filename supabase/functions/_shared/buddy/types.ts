@@ -53,8 +53,6 @@ export interface BuddyWorkloadProfile {
 }
 
 export interface BuddyContext {
-  userId: string
-
   snapshot: BuddySnapshot
 
   timeContext: BuddyTimeContext

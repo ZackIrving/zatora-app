@@ -29,7 +29,6 @@ function makeContext(options: ContextOptions = {}): BuddyContext {
   const timeOfDay = options.timeOfDay ?? 'afternoon'
 
   return {
-    userId: 'controlled-test-user',
     snapshot: {
       activeTasks: 2,
       completedTasks: 1,

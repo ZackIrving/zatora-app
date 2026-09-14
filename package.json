@@ -7,6 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "verify:security-pass-a": "node --test supabase/functions/_shared/buddy/securityContracts.test.ts supabase/functions/_shared/buddy/contextBuilder.test.ts supabase/functions/_shared/buddy/openai.test.ts && node scripts/verify-security-pass-a.mjs",
+    "verify:security-pass-a:auth": "node --env-file=.env.local scripts/verify-security-pass-a-live.mjs --auth-only",
+    "verify:security-pass-a:live": "node --env-file=.env.local scripts/verify-security-pass-a-live.mjs",
+    "verify:security-pass-a:live:diagnostic": "node --env-file=.env.local scripts/verify-security-pass-a-live.mjs --diagnostic",
+    "verify:security-pass-a:smoke": "node --env-file=.env.local scripts/verify-security-pass-a-live.mjs --smoke",
+    "verify:security-pass-a:provider": "node --env-file=.env.local scripts/verify-security-pass-a-provider.mjs",
     "verify:sprint-12b": "node scripts/verify-sprint-12b.mjs",
     "preview": "vite preview"
   },

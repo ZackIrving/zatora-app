@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-export function useAICoach(user, tasks, habits, totalXP) {
+export function useAICoach(user) {
     const [coachInput, setCoachInput] = useState('')
     const [coachResponse, setCoachResponse] = useState(null)
     const [coachStatus, setCoachStatus] = useState('')
@@ -15,18 +15,22 @@ export function useAICoach(user, tasks, habits, totalXP) {
             return
         }
 
+        if (!user) {
+            setCoachStatus('Sign in before using AI Coach.')
+            return
+        }
+
         setCoachStatus('Coach is thinking...')
         setCoachTasksAdded(false)
 
         const { data, error } = await supabase.functions.invoke('ai-task-coach', {
             body: {
                 input: coachInput,
-                userId: user?.id,
             },
         })
 
         if (error) {
-            console.error('AI Coach error:', error)
+            console.error('AI Coach request failed')
             setCoachStatus('Could not reach AI Coach.')
             return
         }
@@ -34,8 +38,8 @@ export function useAICoach(user, tasks, habits, totalXP) {
         try {
             const parsedResponse = JSON.parse(data.result)
             setCoachResponse(parsedResponse)
-        } catch (parseError) {
-            console.error('AI Coach parse error:', parseError)
+        } catch {
+            console.error('AI Coach response parse failed')
             setCoachResponse({
                 summary: data.result,
                 tasks: [],

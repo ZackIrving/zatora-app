@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
 export function useDailyPlanner(user) {
@@ -7,7 +7,10 @@ export function useDailyPlanner(user) {
   const [plannerLoading, setPlannerLoading] = useState(false)
   const [plannerError, setPlannerError] = useState(null)
 
-  async function loadDailyPlan(intensity = 'Balanced', forceRefresh = false) {
+  const loadDailyPlan = useCallback(async (
+    intensity = 'Balanced',
+    forceRefresh = false
+  ) => {
     if (!user) return
 
     setPlannerLoading(true)
@@ -24,7 +27,6 @@ export function useDailyPlanner(user) {
         'daily-ai-planner',
         {
           body: {
-            userId: user.id,
             intensity,
             forceRefresh,
           },
@@ -32,19 +34,7 @@ export function useDailyPlanner(user) {
       )
 
       if (error) {
-        console.error('Daily planner error:', error)
-
-        if (error?.context) {
-          try {
-            const text = await error.context.text()
-            console.error('Edge Function Response:', text)
-          } catch (contextError) {
-            console.error(
-              'Could not read Edge Function error response:',
-              contextError
-            )
-          }
-        }
+        console.error('Daily planner request failed')
 
         setPlannerError(
           "Buddy couldn't generate your Morning Brief. Please try again."
@@ -55,7 +45,7 @@ export function useDailyPlanner(user) {
       }
 
       if (!data?.plan) {
-        console.error('Daily planner returned no plan:', data)
+        console.error('Daily planner returned no plan')
 
         setPlannerError(
           "Buddy couldn't find a plan for today. Please try again."
@@ -72,8 +62,8 @@ export function useDailyPlanner(user) {
           ? 'Loaded today’s plan.'
           : 'Built a fresh plan for today.'
       )
-    } catch (error) {
-      console.error('Unexpected daily planner error:', error)
+    } catch {
+      console.error('Unexpected daily planner request failure')
 
       setPlannerError(
         "Buddy couldn't generate your Morning Brief. Please try again."
@@ -83,18 +73,20 @@ export function useDailyPlanner(user) {
     } finally {
       setPlannerLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
-    if (!user) {
-      setPlan(null)
-      setPlannerError(null)
-      setPlannerStatus('')
-      return
-    }
+    if (!user) return
 
-    loadDailyPlan('Balanced', false)
-  }, [user])
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void loadDailyPlan('Balanced', false)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user, loadDailyPlan])
 
   return {
     plan,

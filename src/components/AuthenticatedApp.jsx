@@ -127,7 +127,7 @@ export default function AuthenticatedApp({ user, signOut }) {
     getCoachResponse,
     coachTasksAdded,
     setCoachTasksAdded,
-  } = useAICoach(user, tasks, habits, totalXP)
+  } = useAICoach(user)
   const displayName = displayNameOverride && displayNameOverride.userId === user?.id
     ? displayNameOverride.value
     : getDisplayName(user)
