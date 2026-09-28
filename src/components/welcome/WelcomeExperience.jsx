@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AuthScreen from '../AuthScreen'
 import {
   MAX_GUEST_NAME_LENGTH,
@@ -11,6 +11,9 @@ import {
 } from '../../hooks/guestOnboardingState'
 import FrancoWelcomeVisual from './FrancoWelcomeVisual'
 import { getFirstTaskPlaceholder } from './firstTaskPlaceholder'
+import { requestGuestFirstWin } from '../../guestFirstWinClient'
+
+// The old boundary said: No AI request has run. Sprint 12C replaces it with the guest-first-win flow.
 
 const SUPPORT_OPTIONS = [
   { value: 'getting_started', label: 'Getting started' },
@@ -95,6 +98,31 @@ function OnboardingFlow({ guestOnboarding, onReturnToWelcome }) {
     guestOnboarding.draft?.firstTask || ''
   )
   const [validationMessage, setValidationMessage] = useState('')
+  const requestKeyRef = useRef('')
+
+  useEffect(() => {
+    if (step !== 'simplify' || guestOnboarding.draft?.simplificationStatus !== 'idle') return
+    guestOnboarding.requestSimplification()
+  }, [guestOnboarding, step, guestOnboarding.draft?.simplificationStatus])
+
+  useEffect(() => {
+    if (step !== 'simplify' || guestOnboarding.draft?.simplificationStatus !== 'processing') return
+    const requestKey = `${guestOnboarding.draft.guestId}:${guestOnboarding.draft.simplificationDepth}:${guestOnboarding.draft.simplificationStatus}`
+    if (requestKeyRef.current === requestKey) return
+    requestKeyRef.current = requestKey
+    let cancelled = false
+    requestGuestFirstWin({
+      task: guestOnboarding.draft.simplificationDepth === 0 ? guestOnboarding.draft.firstTask : guestOnboarding.draft.simplifiedTask,
+      supportNeed: guestOnboarding.draft.supportNeed,
+      simplificationDepth: guestOnboarding.draft.simplificationDepth,
+      flowId: guestOnboarding.draft.guestId,
+    }).then((result) => {
+      if (!cancelled) guestOnboarding.applySimplification(result)
+    }).catch((error) => {
+      if (!cancelled) guestOnboarding.failSimplification(error.code || 'provider')
+    })
+    return () => { cancelled = true }
+  }, [guestOnboarding, step, guestOnboarding.draft?.simplificationStatus, guestOnboarding.draft?.simplificationDepth])
 
   function submitName(event) {
     event.preventDefault()
@@ -143,22 +171,46 @@ function OnboardingFlow({ guestOnboarding, onReturnToWelcome }) {
   }
 
   if (step === 'simplify') {
+    const draft = guestOnboarding.draft
+    const isProcessing = draft.simplificationStatus === 'processing'
+    const isAvailable = draft.simplificationStatus === 'available'
+    const errorMessage = {
+      timeout: 'That took too long. Nothing was lost.',
+      provider: 'Franco hit a small snag. Your task is still here.',
+      rate_limited: 'Franco needs a breather before trying that again.',
+      invalid_response: 'Franco could not make a safe small step this time.',
+      offline: 'You appear to be offline. Your task is saved locally.',
+      feature_disabled: 'Franco is taking a short maintenance nap.',
+    }[draft.simplificationError]
+
     return (
       <div>
         <BackButton onClick={() => guestOnboarding.transitionTo('task')} />
         <div aria-live="polite" aria-atomic="true">
-          <h1 className="font-serif text-3xl font-semibold leading-tight tracking-[-0.035em] text-white sm:text-5xl">
-            Got it.
-          </h1>
-          <p className="mt-5 max-w-lg text-lg leading-8 text-white/72 sm:text-xl">
-            Next, I&apos;m going to help make that smaller.
-          </p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-300/70">{isAvailable ? "LET'S MAKE THIS SMALLER" : 'FRANCO IS THINKING'}</p>
+          <h1 className="mt-3 font-serif text-3xl font-semibold leading-tight tracking-[-0.035em] text-white sm:text-5xl">{isAvailable ? 'Start here.' : 'Alright. Let me make this easier.'}</h1>
+          {isProcessing && <p className="mt-5 text-lg leading-8 text-white/70 sm:text-xl">I&apos;m finding the smallest useful first move.</p>}
+          {isAvailable && <>
+            {draft.acknowledgement && <p className="mt-4 text-base leading-7 text-white/65">{draft.acknowledgement}</p>}
+            <p className="mt-6 rounded-2xl border border-violet-300/20 bg-violet-400/[0.08] p-5 text-lg font-semibold leading-8 text-white sm:text-xl">{draft.simplifiedTask}</p>
+            {draft.followUpSteps.length > 0 && <div className="mt-5 text-sm leading-7 text-white/60"><p className="font-semibold text-white/75">After that, if you want:</p><ul className="mt-1 list-disc pl-5">{draft.followUpSteps.map((item) => <li key={item}>{item}</li>)}</ul></div>}
+            {draft.francoLine && <p className="mt-5 text-sm italic leading-6 text-amber-100/65">{draft.francoLine}</p>}
+          </>}
+          {draft.simplificationStatus === 'error' && <p className="mt-5 text-base leading-7 text-rose-100/80">{errorMessage}</p>}
         </div>
-        <p className="mt-7 border-l-2 border-amber-200/20 pl-4 text-sm leading-6 text-amber-100/55">
-          Current Sprint 12C boundary: your task is saved locally. No AI request has run.
-        </p>
+        {isAvailable && <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center"><button type="button" onClick={guestOnboarding.acceptTask} className={`w-full sm:w-auto sm:min-w-48 ${primaryButtonClass}`}>Start with this</button>{draft.simplificationDepth < 2 && <button type="button" onClick={() => guestOnboarding.transitionTo('simplify', { simplificationDepth: draft.simplificationDepth + 1, followUpSteps: [], simplificationStatus: 'idle' })} className={quietButtonClass}>Make it even smaller</button>}</div>}
+        {draft.simplificationStatus === 'error' && <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center"><button type="button" onClick={guestOnboarding.requestSimplification} className={`w-full sm:w-auto sm:min-w-48 ${primaryButtonClass}`}>Try Franco again</button><button type="button" onClick={guestOnboarding.useDeterministicFallback} className={quietButtonClass}>Use a tiny local step</button></div>}
       </div>
     )
+  }
+
+  if (step === 'commitment') {
+    const draft = guestOnboarding.draft
+    return <div><BackButton onClick={() => guestOnboarding.transitionTo('simplify')} /><div aria-live="polite" aria-atomic="true"><p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-300/70">ONE SMALL MOVE</p><h1 className="mt-3 font-serif text-3xl font-semibold leading-tight tracking-[-0.035em] text-white sm:text-5xl">Just this one thing.</h1><p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-lg font-semibold leading-8 text-white sm:text-xl">{draft.simplifiedTask}</p><p className="mt-5 text-base leading-7 text-white/60">No timer. No pressure. I&apos;ll stay right here.</p></div><div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center"><button type="button" onClick={guestOnboarding.completeFirstWin} className={`w-full sm:w-auto sm:min-w-48 ${primaryButtonClass}`}>I did it</button><button type="button" className={quietButtonClass}>Still working</button>{draft.simplificationDepth < 2 && <button type="button" onClick={() => guestOnboarding.transitionTo('simplify', { simplificationDepth: draft.simplificationDepth + 1, acceptedTask: false, followUpSteps: [], simplificationStatus: 'idle' })} className={quietButtonClass}>Make it smaller</button>}</div></div>
+  }
+
+  if (step === 'win') {
+    return <div><div aria-live="polite" aria-atomic="true"><p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-200/80">FIRST WIN</p><h1 className="mt-3 font-serif text-4xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-5xl">There it is. You started.</h1><p className="mt-5 text-lg leading-8 text-white/70">{guestOnboarding.draft.francoLine || 'Knew supervising you would pay off.'}</p></div><div className="mt-8 rounded-2xl border border-amber-200/25 bg-amber-300/[0.10] p-5 text-center"><p className="text-3xl font-black text-amber-100">+25 XP</p><p className="mt-1 text-sm text-amber-100/65">Starter XP earned locally</p></div><p className="mt-7 text-sm leading-6 text-white/45">The next part of your journey is waiting for Sprint 12D.</p></div>
   }
 
   if (step === 'task') {

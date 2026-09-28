@@ -14,6 +14,8 @@
     "verify:security-pass-a:smoke": "node --env-file=.env.local scripts/verify-security-pass-a-live.mjs --smoke",
     "verify:security-pass-a:provider": "node --env-file=.env.local scripts/verify-security-pass-a-provider.mjs",
     "verify:sprint-12b": "node scripts/verify-sprint-12b.mjs",
+    "verify:sprint-12c": "node scripts/verify-sprint-12c.mjs",
+    "verify:sprint-12c-abuse-control": "node scripts/verify-sprint-12c-abuse-control.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

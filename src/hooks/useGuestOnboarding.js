@@ -36,6 +36,12 @@ export function useGuestOnboarding() {
   const setMigrationIntent = useCallback((value) => {
     dispatch({ type: 'SET_MIGRATION_INTENT', value })
   }, [])
+  const requestSimplification = useCallback(() => dispatch({ type: 'REQUEST_SIMPLIFICATION' }), [])
+  const applySimplification = useCallback((result) => dispatch({ type: 'APPLY_SIMPLIFICATION', result }), [])
+  const failSimplification = useCallback((error) => dispatch({ type: 'SIMPLIFICATION_ERROR', error }), [])
+  const useDeterministicFallback = useCallback(() => dispatch({ type: 'FALLBACK_SIMPLIFICATION' }), [])
+  const acceptTask = useCallback(() => dispatch({ type: 'ACCEPT_TASK' }), [])
+  const completeFirstWin = useCallback(() => dispatch({ type: 'COMPLETE_FIRST_WIN' }), [])
 
   return {
     draft,
@@ -46,5 +52,11 @@ export function useGuestOnboarding() {
     reset,
     transitionTo,
     setMigrationIntent,
+    requestSimplification,
+    applySimplification,
+    failSimplification,
+    useDeterministicFallback,
+    acceptTask,
+    completeFirstWin,
   }
 }
