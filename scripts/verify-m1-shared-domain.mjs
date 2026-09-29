@@ -88,7 +88,8 @@ test('Malformed AI result is rejected without changing state', () => {
 test('Deterministic fallback creates an available result without AI', () => {
   const fallback = guestOnboardingReducer(preparedDraft(), { type: 'FALLBACK_SIMPLIFICATION' }, now)
   assert.equal(fallback.simplificationStatus, 'available')
-  assert.equal(fallback.simplifiedTask, 'Start the report')
+  assert.notEqual(fallback.simplifiedTask, 'Start the report')
+  assert.equal(isValidGuestFirstWinResult({ tinyFirstStep: fallback.simplifiedTask, followUpSteps: fallback.followUpSteps }, 0), true)
   assert.deepEqual(fallback.followUpSteps, [])
 })
 

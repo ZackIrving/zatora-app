@@ -209,6 +209,10 @@ export function guestOnboardingReducer(state, action, now = new Date()) {
       const normalized = normalizeGuestDraft(state, now.getTime())
       return normalized ? withFreshLifetime(normalized, now) : null
     }
+    case 'RESTORE': {
+      const normalized = normalizeGuestDraft(action.draft, now.getTime())
+      return normalized ? withFreshLifetime(normalized, now) : null
+    }
     case 'TRANSITION': {
       const current = isValidGuestDraft(state, now.getTime()) ? state : normalizeGuestDraft(state, now.getTime())
       if (!current || !canTransitionGuestOnboarding(current.step, action.step)) return state
@@ -242,7 +246,8 @@ export function guestOnboardingReducer(state, action, now = new Date()) {
     case 'FALLBACK_SIMPLIFICATION': {
       const current = normalizeGuestDraft(state, now.getTime())
       if (!current || !isValidGuestTask(current.firstTask)) return state
-      const fallback = createDeterministicFallback(current.firstTask)
+      const fallbackInput = current.simplificationDepth === 0 ? current.firstTask : current.simplifiedTask
+      const fallback = createDeterministicFallback(fallbackInput, current.simplificationDepth)
       return withFreshLifetime({
         ...current,
         simplificationStatus: 'available',
@@ -257,6 +262,12 @@ export function guestOnboardingReducer(state, action, now = new Date()) {
       const current = normalizeGuestDraft(state, now.getTime())
       if (!current || current.simplificationStatus !== 'available' || !isValidGuestTask(current.simplifiedTask)) return state
       return withFreshLifetime({ ...current, acceptedTask: true, step: 'commitment' }, now)
+    }
+    case 'STILL_WORKING': {
+      const current = normalizeGuestDraft(state, now.getTime())
+      // Staying with the chosen step is intentionally a persistence-only
+      // action: it never completes the win, awards XP, or invokes a service.
+      return current && current.step === 'commitment' ? current : state
     }
     case 'COMPLETE_FIRST_WIN': {
       const current = normalizeGuestDraft(state, now.getTime())

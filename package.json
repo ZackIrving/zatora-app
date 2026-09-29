@@ -15,6 +15,7 @@
     "verify:security-pass-a:provider": "node --env-file=.env.local scripts/verify-security-pass-a-provider.mjs",
     "verify:sprint-12b": "node scripts/verify-sprint-12b.mjs",
     "verify:sprint-12c": "node scripts/verify-sprint-12c.mjs",
+    "verify:m4-native-first-win": "node scripts/verify-m4-native-first-win.mjs",
     "verify:sprint-12c-abuse-control": "node scripts/verify-sprint-12c-abuse-control.mjs",
     "preview": "vite preview"
   },

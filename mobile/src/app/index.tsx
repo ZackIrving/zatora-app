@@ -1,10 +1,27 @@
+import { Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
+import { useAuth } from '@/auth/AuthProvider';
 
 export default function HomeRoute() {
+  const { isInitializing, session } = useAuth();
+
+  if (isInitializing) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <Text style={styles.eyebrow}>ZATORA NATIVE</Text>
+          <Text style={styles.title}>Restoring your session…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!session) return <Redirect href={'/(guest)/welcome' as any} />;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -12,14 +29,16 @@ export default function HomeRoute() {
           <Text style={styles.markText}>Z</Text>
         </View>
         <Text style={styles.eyebrow}>ZATORA NATIVE</Text>
-        <Text style={styles.title}>A calmer way to get things done.</Text>
+        <Text style={styles.title}>Authenticated shell is not yet ported.</Text>
         <Text style={styles.body}>
-          The native foundation is running. Product flows will arrive in the
-          next migration phase.
+          Your session is restored. The authenticated product surface arrives
+          in a later migration phase.
         </Text>
         <View style={styles.statusPill}>
           <View style={styles.statusDot} />
-          <Text style={styles.statusText}>Expo foundation ready</Text>
+          <Text style={styles.statusText}>
+            Authenticated session restored
+          </Text>
         </View>
       </View>
     </SafeAreaView>
