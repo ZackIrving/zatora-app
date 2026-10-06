@@ -16,6 +16,7 @@
     "verify:sprint-12b": "node scripts/verify-sprint-12b.mjs",
     "verify:sprint-12c": "node scripts/verify-sprint-12c.mjs",
     "verify:m4-native-first-win": "node scripts/verify-m4-native-first-win.mjs",
+    "verify:m5-native-guest-ai": "node scripts/verify-m5-native-guest-ai.mjs",
     "verify:sprint-12c-abuse-control": "node scripts/verify-sprint-12c-abuse-control.mjs",
     "preview": "vite preview"
   },

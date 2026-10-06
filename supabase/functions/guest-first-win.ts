@@ -15,17 +15,23 @@ function corsHeaders(req: Request): HeadersInit {
   return { ...(allowed.includes(origin) ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}), 'Access-Control-Allow-Headers': 'content-type, apikey, x-client-info, x-zatora-guest-flow', 'Access-Control-Allow-Methods': 'POST, OPTIONS' }
 }
 
+function hasAllowedBrowserOrigin(req: Request): boolean {
+  const origin = req.headers.get('origin')
+  return !origin || allowedOrigins().includes(origin)
+}
+
 function json(req: Request, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } })
 }
 
-async function generate(prompt: string): Promise<string> {
+async function generate(prompt: string, simplificationDepth: number): Promise<string> {
   const key = Deno.env.get('OPENAI_API_KEY')
   if (!key) throw new HttpError(503, 'provider', 'Franco is temporarily unavailable.')
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 12_000)
   try {
-    const response = await fetch('https://api.openai.com/v1/responses', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, signal: controller.signal, body: JSON.stringify({ model: 'gpt-5-mini', reasoning: { effort: 'low' }, text: { verbosity: 'low' }, input: prompt, max_output_tokens: 500, store: false }) })
+    const followUpLimit = Math.min(2, 2 - simplificationDepth)
+    const response = await fetch('https://api.openai.com/v1/responses', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, signal: controller.signal, body: JSON.stringify({ model: 'gpt-5-mini', reasoning: { effort: 'low' }, text: { verbosity: 'low', format: { type: 'json_schema', name: 'guest_first_win', strict: true, schema: { type: 'object', additionalProperties: false, required: ['acknowledgement', 'tinyFirstStep', 'followUpSteps', 'francoLine'], properties: { acknowledgement: { type: 'string', maxLength: 180 }, tinyFirstStep: { type: 'string', minLength: 1, maxLength: 280 }, followUpSteps: { type: 'array', maxItems: followUpLimit, items: { type: 'string', minLength: 1, maxLength: 180 } }, francoLine: { type: 'string', maxLength: 160 } } } } }, input: prompt, max_output_tokens: 500, store: false }) })
     if (!response.ok) throw new HttpError(response.status === 429 ? 429 : 502, response.status === 429 ? 'rate_limited' : 'provider', 'Franco is temporarily unavailable.')
     const data = await response.json()
     const output = data?.output_text || data?.output?.flatMap((item: { content?: Array<{ text?: string; output_text?: string }> }) => item.content || []).map((content: { text?: string; output_text?: string }) => content.text || content.output_text).filter(Boolean).join('\n\n')
@@ -39,6 +45,7 @@ async function generate(prompt: string): Promise<string> {
 }
 
 serve(async (req) => {
+  if (!hasAllowedBrowserOrigin(req)) return json(req, { success: false, code: 'origin_not_allowed', error: 'Origin is not allowed.' }, 403)
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
   if (req.method !== 'POST') return json(req, { success: false, code: 'method_not_allowed', error: 'Method not allowed.' }, 405)
   const requestId = createRequestId()
@@ -46,7 +53,7 @@ serve(async (req) => {
     if (Deno.env.get('GUEST_AI_ENABLED') !== 'true') throw new HttpError(503, 'feature_disabled', 'Guest AI is temporarily unavailable.')
     const request = parseGuestFirstWinRequest(await readGuestJsonBody(req))
     await reserveGuestGeneration(req)
-    const output = await generate(buildGuestFirstWinPrompt(request))
+    const output = await generate(buildGuestFirstWinPrompt(request), request.simplificationDepth)
     const result = validateGuestFirstWinResponse(output, request.simplificationDepth)
     return json(req, result)
   } catch (error) {

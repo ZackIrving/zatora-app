@@ -1,12 +1,11 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GuestButton, GuestHeading, GuestTextInput, guestUiStyles } from '@/components/GuestUi';
 import { GuestShell } from '@/components/GuestShell';
 import { useGuestOnboarding } from '@/guest/GuestOnboardingProvider';
-import { requestDeterministicFirstWin } from '@/guest/guestFirstWinService';
+import { requestGuestFirstWin } from '@/guest/guestFirstWinLiveService';
 import { getFirstTaskPlaceholder } from '../../../../shared/guest/firstTaskPlaceholder.js';
 import { MAX_GUEST_TASK_LENGTH, SUPPORT_NEED_VALUES } from '../../../../shared/guest/firstWinContract.js';
 
@@ -41,7 +40,7 @@ export default function GuestOnboardingRoute() {
     requestSimplification,
     applySimplification,
     failSimplification,
-    useDeterministicFallback,
+    applyDeterministicFallback,
     acceptTask,
     stillWorking,
     completeFirstWin,
@@ -50,13 +49,18 @@ export default function GuestOnboardingRoute() {
   const [taskInput, setTaskInput] = useState('');
   const [error, setError] = useState('');
   const requestKeyRef = useRef('');
+  const restoredStep = draft?.step;
+  const restoredName = draft?.name;
+  const restoredTask = draft?.firstTask;
 
   useEffect(() => {
-    if (!draft) return;
-    setNameInput(draft.name ?? '');
-    setTaskInput(draft.firstTask ?? '');
+    if (!restoredStep) return;
+    // Draft persistence is the external source of truth on restore/navigation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNameInput(restoredName ?? '');
+    setTaskInput(restoredTask ?? '');
     setError('');
-  }, [draft?.step, draft?.name, draft?.firstTask]);
+  }, [restoredStep, restoredName, restoredTask]);
 
   // M4 intentionally uses the shared deterministic fallback behind a service
   // boundary. Restored processing states remain an explicit recovery/error
@@ -76,7 +80,7 @@ export default function GuestOnboardingRoute() {
     requestKeyRef.current = requestKey;
     let cancelled = false;
     const task = draft.simplificationDepth === 0 ? draft.firstTask : draft.simplifiedTask;
-    void requestDeterministicFirstWin({
+    void requestGuestFirstWin({
       task,
       supportNeed: draft.supportNeed,
       simplificationDepth: draft.simplificationDepth,
@@ -224,7 +228,7 @@ export default function GuestOnboardingRoute() {
       </> : null}
       {draft.simplificationStatus === 'error' ? <>
         <GuestButton onPress={requestSimplification}>Try Franco again</GuestButton>
-        <GuestButton secondary onPress={() => useDeterministicFallback()}>Use a tiny local step</GuestButton>
+        <GuestButton secondary onPress={applyDeterministicFallback}>Use a tiny local step</GuestButton>
       </> : null}
       <GuestButton secondary onPress={() => { startOver(); router.replace('/(guest)/welcome' as never); }}>Start over</GuestButton>
     </GuestShell>;

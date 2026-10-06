@@ -39,7 +39,7 @@ check('welcome composition uses responsive hero layout', welcome.includes('hero 
 check('task input uses focus-aware keyboard scrolling', onboarding.includes('<GuestShell keyboardAware>') && shell.includes("keyboardDidShow") && shell.includes('scrollToEnd'))
 check('native flow has accessible controls', ui.includes('accessibilityRole="button"') && onboarding.includes('accessibilityRole="radio"') && onboarding.includes('accessibilityLiveRegion'))
 check('native flow reaches explicit M4 boundary', onboarding.includes('Sprint 12C native First Win arrives in M4') && onboarding.includes('Edit my task') && onboarding.includes('Start over'))
-check('native flow makes no provider/network request', !/requestGuestFirstWin|supabase\.functions\.invoke|\bfetch\s*\(|OPENAI_API_KEY|GUEST_QUOTA_DB_URL/.test(`${onboarding}\n${provider}\n${welcome}`))
+check('native flow keeps provider access behind the service seam', onboarding.includes('requestGuestFirstWin') && !/supabase\.functions\.invoke|\bfetch\s*\(|OPENAI_API_KEY|GUEST_QUOTA_DB_URL/.test(`${onboarding}\n${provider}\n${welcome}`))
 check('authenticated session redirects away from guest flow', guestLayout.includes('<Redirect href="/" />'))
 check('unauthenticated root redirects to guest flow', rootRoute.includes("'/(guest)/welcome'"))
 check('authenticated root is a safe placeholder', rootRoute.includes('Authenticated session restored') && !rootRoute.includes('user.email'))

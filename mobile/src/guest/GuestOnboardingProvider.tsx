@@ -17,10 +17,14 @@ import {
   normalizeGuestName,
   normalizeGuestTask,
 } from '../../../shared/guest/guestOnboardingDomain.js';
-import { clearGuestDraft, loadGuestDraft, saveGuestDraft } from './guestStorage';
+import {
+  clearGuestDraft,
+  clearGuestFlowToken,
+  loadGuestDraft,
+  saveGuestDraft,
+} from './guestStorage';
 
 type GuestDraft = Record<string, any>;
-type GuestAction = { type: string; [key: string]: any };
 
 type GuestOnboardingContextValue = {
   draft: GuestDraft | null;
@@ -33,7 +37,7 @@ type GuestOnboardingContextValue = {
   requestSimplification: () => void;
   applySimplification: (result: unknown) => void;
   failSimplification: (error: string) => void;
-  useDeterministicFallback: () => void;
+  applyDeterministicFallback: () => void;
   acceptTask: () => void;
   stillWorking: () => void;
   completeFirstWin: () => void;
@@ -70,12 +74,12 @@ export function GuestOnboardingProvider({ children }: PropsWithChildren) {
   const start = useCallback(() => dispatch({ type: 'START' }), []);
   const startOver = useCallback(() => {
     dispatch({ type: 'START_OVER' });
-    void clearGuestDraft();
+    void Promise.all([clearGuestDraft(), clearGuestFlowToken()]);
   }, []);
   const resume = useCallback(() => dispatch({ type: 'RESUME' }), []);
   const reset = useCallback(() => {
     dispatch({ type: 'RESET' });
-    void clearGuestDraft();
+    void Promise.all([clearGuestDraft(), clearGuestFlowToken()]);
   }, []);
   const transitionTo = useCallback(
     (step: string, updates: Record<string, unknown> = {}) =>
@@ -94,7 +98,7 @@ export function GuestOnboardingProvider({ children }: PropsWithChildren) {
     (error: string) => dispatch({ type: 'SIMPLIFICATION_ERROR', error }),
     [],
   );
-  const useDeterministicFallback = useCallback(
+  const applyDeterministicFallback = useCallback(
     () => dispatch({ type: 'FALLBACK_SIMPLIFICATION' }),
     [],
   );
@@ -117,7 +121,7 @@ export function GuestOnboardingProvider({ children }: PropsWithChildren) {
       requestSimplification,
       applySimplification,
       failSimplification,
-      useDeterministicFallback,
+      applyDeterministicFallback,
       acceptTask,
       stillWorking,
       completeFirstWin,
@@ -141,7 +145,7 @@ export function GuestOnboardingProvider({ children }: PropsWithChildren) {
       startOver,
       stillWorking,
       transitionTo,
-      useDeterministicFallback,
+      applyDeterministicFallback,
     ],
   );
 
