@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { GuestButton, GuestHeading, guestUiStyles } from '@/components/GuestUi';
 import { GuestShell } from '@/components/GuestShell';
 import { useGuestOnboarding } from '@/guest/GuestOnboardingProvider';
+import { colors } from '@/theme/colors';
 
 export default function GuestWelcomeRoute() {
   const router = useRouter();
@@ -43,6 +44,11 @@ export default function GuestWelcomeRoute() {
           />
           <GuestButton onPress={continueDraft}>Keep going</GuestButton>
           <GuestButton onPress={startOver} secondary>Start over</GuestButton>
+          <View style={styles.accountActions}>
+            <Text style={styles.accountPrompt}>Ready to use an account instead?</Text>
+            <GuestButton onPress={() => router.push('/(auth)/sign-in' as never)} secondary>Sign in</GuestButton>
+            <GuestButton onPress={() => router.push('/(auth)/sign-up' as never)} secondary>Create account</GuestButton>
+          </View>
         </>
       ) : (
         <>
@@ -55,6 +61,11 @@ export default function GuestWelcomeRoute() {
             <Text style={guestUiStyles.body}>No account needed to begin.</Text>
           </View>
           <GuestButton onPress={begin}>Say hello</GuestButton>
+          <View style={styles.accountActions}>
+            <Text style={styles.accountPrompt}>Already know where you’re headed?</Text>
+            <GuestButton onPress={() => router.push('/(auth)/sign-in' as never)} secondary>Sign in</GuestButton>
+            <GuestButton onPress={() => router.push('/(auth)/sign-up' as never)} secondary>Create account</GuestButton>
+          </View>
         </>
       )}
     </GuestShell>
@@ -67,4 +78,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   welcomeHeading: { marginBottom: 6 },
+  accountActions: { borderTopColor: colors.border, borderTopWidth: 1, marginTop: 28, paddingTop: 10 },
+  accountPrompt: { color: colors.textMuted, fontSize: 13, marginTop: 8, textAlign: 'center' },
 });

@@ -28,6 +28,19 @@ and pauses or resumes Supabase token refresh with the app lifecycle. Never add
 server secrets to Expo variables. OAuth and password-reset deep links remain
 deferred until a later auth phase.
 
+For local Expo Go/device work, create `mobile/.env.local` (Git ignores this
+file) with the public client configuration:
+
+```dotenv
+EXPO_PUBLIC_SUPABASE_URL=https://coytgudqzoexmielqesp.supabase.co
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<PUBLIC_KEY>
+```
+
+Use the `sb_publishable_...` key from the Supabase project. Never place an
+`sb_secret_...` key, service-role key, database password, test-account
+password, or session token in this file. Restart Metro with
+`npx expo start --clear` after changing Expo environment values.
+
 Future public client variables use `EXPO_PUBLIC_*` names. Keep OpenAI keys,
 quota database credentials, HMAC secrets, and guest-AI server flags in
 Supabase Edge Function secrets; never add them here.

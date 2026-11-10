@@ -24,7 +24,13 @@ function test(name, run) {
 test('Public configuration names are explicit and safely validated', () => {
   assert.match(env, /EXPO_PUBLIC_SUPABASE_URL/)
   assert.match(env, /EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY/)
+  assert.match(env, /process\.env\.EXPO_PUBLIC_SUPABASE_URL/)
+  assert.match(env, /process\.env\.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY/)
+  assert.doesNotMatch(env, /environment: PublicEnvironment = process\.env/)
   assert.match(env, /Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY/)
+  assert.match(env, /https:\/\/coytgudqzoexmielqesp\.supabase\.co/)
+  assert.match(env, /sb_publishable_/)
+  assert.match(env, /sb_secret_/)
   assert.match(exampleEnv, /^EXPO_PUBLIC_SUPABASE_URL=$/m)
   assert.match(exampleEnv, /^EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$/m)
 })
